@@ -6,6 +6,7 @@
 
     <groupId>cn.czfshine.network</groupId>
     <artifactId>network</artifactId>
+    <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <build>
         <plugins>
@@ -19,6 +20,13 @@
             </plugin>
         </plugins>
     </build>
+    <modules>
+        <module>cs_core</module>
+        <module>cs-bio-server</module>
+        <module>cs-bio-client</module>
+        <module>cs-nio-server</module>
+        <module>cs-nio-client</module>
+    </modules>
     <dependencies>
         <dependency>
             <groupId>org.projectlombok</groupId>
