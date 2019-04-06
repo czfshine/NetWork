@@ -60,15 +60,15 @@ public class HeadlessNIOServer implements Server {
         try {
             while (selector.select() > 0) {
                 Set<SelectionKey> readyKeys = selector.selectedKeys();
-                for (SelectionKey key : readyKeys) {
-                    readyKeys.remove(key);
+                readyKeys.forEach((key)->{
+                    //readyKeys.remove(key);
                     try {
                         if (key.isAcceptable()) {
                             ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
                             SocketChannel socketChannel = ssc.accept();
                             if(socketChannel==null){
                                 log.debug("socketChannel 为空....");
-                                continue;
+                                return ;
                             }
                             System.out.println(socketChannel);
                             log.info("监听到{}:{}的连接接入",
@@ -105,8 +105,8 @@ public class HeadlessNIOServer implements Server {
                             e.printStackTrace();
                         }
                     }
-                }
-
+                });
+                readyKeys.clear();
             }//#while
         } catch (IOException e) { // selector.select()这一句抛出的异常，其他异常被内部捕获了
             log.error("服务器连接异常关闭");
