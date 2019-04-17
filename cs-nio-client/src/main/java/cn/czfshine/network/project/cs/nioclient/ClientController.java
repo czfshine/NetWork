@@ -1,4 +1,5 @@
 package cn.czfshine.network.project.cs.nioclient;
+import cn.czfshine.network.project.cs.Client;
 import cn.czfshine.network.project.cs.config.Config;
 import cn.czfshine.network.project.cs.dto.Message;
 import io.datafx.controller.ViewController;
@@ -106,7 +107,7 @@ public class ClientController {
         int port=Integer.valueOf(text);
 
         log("开始连接服务器"+IP+":"+port);
-        client = new Client();
+        client = new NioClient();
         try {
             client.connect(IP,port);
             log("连接成功");
@@ -121,14 +122,14 @@ public class ClientController {
             e.printStackTrace();
         }
 
-        Client.MessageHandler messageHandler = message -> {
+        NioClient.MessageHandler messageHandler = message -> {
             log("收到消息"+message.toString());
             receiveMessage(message);
             return false;
         };
         client.setHandle(messageHandler);
 
-        Client.ErrorHandler errorHandler = () -> {
+        NioClient.ErrorHandler errorHandler = () -> {
             log("服务器已自动关闭");
             connectButton.setDisable(false);
             disconnectButton.setDisable(true);

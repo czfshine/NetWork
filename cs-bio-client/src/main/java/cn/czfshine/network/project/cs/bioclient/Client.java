@@ -44,10 +44,10 @@ public class Client {
         thread.start();
     }
     public void sendLogin(String username) throws IOException {
-        oos.writeObject(new Login(username));
+        //oos.writeObject(new Login(username));
     }
     public void sendMessage(Message message) throws IOException {
-        oos.writeObject(message);
+        //oos.writeObject(message);
     }
     MessageHandler handler;
     private ErrorHandler errorHandler;

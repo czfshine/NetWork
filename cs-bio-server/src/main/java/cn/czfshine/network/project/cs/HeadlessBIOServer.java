@@ -102,7 +102,7 @@ public class HeadlessBIOServer implements Server {
     /**向所有活动的客户端广播一条消息
      * @param message
      */
-    private void rodcast(Object message){
+    private synchronized void rodcast(Object message){
         log.info("开始广播消息");
 
         for (Socket socket:alloos.keySet()
