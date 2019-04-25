@@ -26,6 +26,9 @@
         <module>cs-bio-client</module>
         <module>cs-nio-server</module>
         <module>cs-nio-client</module>
+        <module>p2p-common</module>
+        <module>p2p-server</module>
+        <module>p2p-client</module>
     </modules>
     <dependencies>
         <dependency>
@@ -74,6 +77,13 @@
             <groupId> io.datafx</groupId>
             <artifactId>flow</artifactId>
             <version>8.0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <!--<scope>test</scope>-->
         </dependency>
     </dependencies>
 
