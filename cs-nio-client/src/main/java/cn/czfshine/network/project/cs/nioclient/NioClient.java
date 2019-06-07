@@ -14,10 +14,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author:czfshine
@@ -91,6 +88,20 @@ public class NioClient implements Client {
     }
     private void stopListenWrite(SelectionKey selectionKey){
         selectionKey.interestOps(selectionKey.interestOps() & ~SelectionKey.OP_WRITE);
+        ArrayList<Integer> integers = new ArrayList<>();
+        integers.add(1);
+        integers.add(1);
+        integers.add(1);
+        integers.add(1);
+        integers.add(1);
+        integers.add(1);
+
+        integers.forEach(System.out::println);
+
+        integers.stream().filter((e)-> e>2).count();
+        integers.stream().map(Long::new);
+
+
     }
 
 
