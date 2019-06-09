@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.JFXButton?>
+<?import com.jfoenix.controls.JFXTextField?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="372.0" prefWidth="440.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <Label layoutX="56.0" layoutY="33.0" prefHeight="54.0" prefWidth="346.0" text="欢迎使用我的聊天工具">
+         <font>
+            <Font name="Microsoft YaHei UI" size="33.0" />
+         </font>
+      </Label>
+      <Label layoutX="79.0" layoutY="115.0" text="用户名" />
+      <Label layoutX="49.0" layoutY="175.0" text="服务器地址" />
+      <Label layoutX="49.0" layoutY="235.0" text="服务器端口" />
+      <JFXButton fx:id="loginBtn" buttonType="RAISED" layoutX="195.0" layoutY="289.0"  ripplerFill="#28adbf" style="-fx-background-color: #333eda;" text="登录" textFill="WHITE" />
+      <JFXTextField fx:id="usernameText" layoutX="137.0" layoutY="110.0" text="czfshine" />
+      <JFXTextField fx:id="addressText" layoutX="137.0" layoutY="170.0" text="127.0.0.1" />
+      <JFXTextField fx:id="portText" layoutX="137.0" layoutY="230.0" text="12345" />
+   </children>
+</AnchorPane>

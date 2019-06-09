@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.JFXButton?>
+<?import com.jfoenix.controls.JFXProgressBar?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.text.Font?>
+
+<StackPane xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <AnchorPane prefHeight="266.0" prefWidth="370.0">
+         <children>
+            <Label layoutX="99.0" layoutY="25.0" text="接收文件">
+               <font>
+                  <Font name="Microsoft YaHei Bold" size="37.0" />
+               </font>
+            </Label>
+            <Label fx:id="infoLabel" layoutX="14.0" layoutY="93.0" text="用户给你发送了一个文件，是否接收？" />
+            <JFXButton fx:id="acceptBtn" buttonType="RAISED" layoutX="50.0" layoutY="148.0" mnemonicParsing="false" onAction="#onAccept" ripplerFill="BLACK" style="-fx-background-color: #333eda;" text="接受" textFill="WHITE" />
+            <JFXButton fx:id="refuseBtn" layoutX="228.0" layoutY="148.0" mnemonicParsing="false" onAction="#onRefuse" style="-fx-background-color: #da3e33;" text="拒绝" textFill="WHITE" />
+            <Label layoutX="31.0" layoutY="203.0" text="传输进度" />
+            <JFXProgressBar fx:id="bar" layoutX="107.0" layoutY="207.0" prefHeight="12.0" prefWidth="200.0" progress="0.0" />
+         </children>
+      </AnchorPane>
+   </children>
+</StackPane>

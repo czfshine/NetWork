@@ -29,6 +29,12 @@
         <module>p2p-common</module>
         <module>p2p-server</module>
         <module>p2p-client</module>
+        <module>im-server</module>
+        <module>im-common</module>
+        <module>im-chat-server</module>
+        <module>im-chat-client</module>
+        <module>im-gui</module>
+        <module>im-client</module>
     </modules>
     <dependencies>
         <dependency>

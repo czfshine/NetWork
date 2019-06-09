@@ -1,0 +1,7 @@
+.left-label{
+    -fx-background-color: #213f57;
+    -fx-border-width:120px;
+}
+.custom-jfx-list-view-icon{
+    -fx-font-size: 2em;
+}
