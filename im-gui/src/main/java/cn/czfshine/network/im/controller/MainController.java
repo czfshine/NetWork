@@ -1,7 +1,10 @@
-package cn.czfshine.network.im;
+package cn.czfshine.network.im.controller;
+import cn.czfshine.network.im.ChatClient;
+import cn.czfshine.network.im.Sender;
 import cn.czfshine.network.im.chat.ChatServer;
 import cn.czfshine.network.im.client.ImClient;
 import cn.czfshine.network.im.dto.*;
+import cn.czfshine.network.im.service.*;
 import com.jfoenix.controls.*;
 import io.datafx.controller.ViewController;
 import io.datafx.controller.flow.context.FXMLViewFlowContext;
@@ -18,14 +21,15 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
+
 import javax.annotation.PostConstruct;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-import static cn.czfshine.network.im.ImConfig.blockSize;
 import static cn.czfshine.network.im.MessageUtils.format;
 
 /**
@@ -37,149 +41,6 @@ import static cn.czfshine.network.im.MessageUtils.format;
 @Slf4j
 @ViewController(value = "/fxml/main.fxml")
 public class MainController {
-    @FXMLViewFlowContext
-    private ViewFlowContext flowContext;
-
-    @FXML
-    private JFXButton sendBtn;
-
-    @FXML
-    private Label otherUserNameLabel;
-
-    @FXML
-    private JFXTextArea inputText;
-
-    @FXML
-    private JFXTextArea chatMessageText;
-
-    @FXML
-    private JFXListView<String> userListView;
-
-    @FXML
-    private JFXTextField logText;
-
-    /**
-     * 发送文件对话框的控制器，
-     * 之所以要放在主控制器内部是因为它需要用到大量主控制器内的变量和方法，
-     * 需要传递的变量包括聊天服务端和客户端，当前的系统状态等
-     * 通过参数传递过去有点费事
-     * todo 优化
-     */
-    @ViewController(value = "fxml/FileDialog.fxml")
-    public class FileDialogController {
-
-        @FXMLViewFlowContext
-        private ViewFlowContext flowContext;
-
-        @FXML
-        private JFXTextField pathText;
-
-        @FXML
-        private JFXProgressBar bar;
-
-        @FXML
-        private Label infoLabel;
-
-        @FXML
-        private JFXButton selectBtn;
-
-        @FXML
-        private JFXButton cleanBtn;
-
-        public Stage getStage() {
-            return stage;
-        }
-        public void setStage(Stage stage) {
-            this.stage = stage;
-        }
-        private Stage stage;
-        @FXML
-        private JFXButton okBtn;
-
-        //所有事件函数全部移到主控制器内，这个控制器只有薄薄的一层用来传递事件
-        @FXML
-        void onSelect(ActionEvent event) {
-            whenFileSelect();
-        }
-
-        @FXML
-        void onOk(ActionEvent event) {
-            whenFileWillSend();
-        }
-
-        @FXML
-        void onClean(ActionEvent event) {
-            whenFileClean();
-            
-        }
-    }
-    public class ReceiveFileController {
-
-        @FXML
-        private Label infoLabel;
-
-        @FXML
-        private JFXProgressBar bar;
-        @FXML
-        private JFXButton acceptBtn;
-        @FXML
-        private JFXButton refuseBtn;
-
-        public Stage getStage() {
-            return stage;
-        }
-
-        public void setStage(Stage stage) {
-            this.stage = stage;
-        }
-
-        private Stage stage;
-        private FileSend fileSend;
-        @FXML
-        void onAccept(ActionEvent event) {
-            whenFileAccept(fileSend);
-        }
-
-        @FXML
-        void onRefuse(ActionEvent event) {
-            whenFileRefuse(fileSend);
-        }
-
-        public FileSend getFileSend() {
-            return fileSend;
-        }
-
-        public void setFileSend(FileSend fileSend) {
-            this.fileSend = fileSend;
-        }
-    }
-
-    //数据域
-    private String curUsername;
-    private String serverAddress="";
-    private String serverPort="";
-    private String selfUsername="";
-    private Integer chatServerPort;
-
-    private HashMap<String,Sender> allSender=new HashMap<>();
-    private HashMap<String,Login> allUserInfo=new HashMap<>();
-    private HashMap<String, List<Message>> allMessage=new HashMap<>();
-    private ChatServer chatServer;
-
-    /*ui相关*/
-    private ReceiveFileController rfc;
-    private FileDialogController fdc;
-    private ObservableList<String> allUserList;
-    /*文件相关*/
-    private int writedBytes;
-    private int fileLength;
-    private BufferedInputStream bis;
-    private File recvFile;
-    private BufferedOutputStream bos;
-    private String filePath="";
-    private File selectFile;
-    private int curSeq=0;
-    private int readedBytes =0;
 
     /**
      * 初始化函数，登录界面的登录按钮被点击后会跳转到这个页面，可以取得对应的信息
@@ -224,6 +85,9 @@ public class MainController {
 
         allUserList = FXCollections.observableArrayList();
 
+        fileSendService.whenSendDone((s)-> whenFileSendDone());
+        fileReceiveService.whenReceiveDone((s)->whenReceiveDone());
+
         Stage stage = (Stage)flowContext.getRegisteredObject("Stage");
         stage.setWidth(970);
         stage.setHeight(740);
@@ -238,14 +102,10 @@ public class MainController {
     @FXML
     private void onSend(ActionEvent event) {
         String msg = inputText.getText();
+        inputText.clear();
         log.info("send to {}:{}",curUsername,msg);
         TextMessage textMessage = createTextMessage(msg);
-        Sender sender = allSender.getOrDefault(curUsername, null);
-        if(sender !=null){
-            sender.sendTo(curUsername,textMessage);
-        }else{
-            log.error("user:{} not connected",curUsername);
-        }
+        send(textMessage);
         addToMessagePool(textMessage);
     }
     @FXML
@@ -255,6 +115,7 @@ public class MainController {
         fxmlLoader.setController(fdc);
         Stage stage = ShowDialog(fxmlLoader);
         fdc.setStage(stage);
+        fdc.setMainController(this);
     }
     /**当新用户登录
      * @param login
@@ -298,13 +159,15 @@ public class MainController {
             
         }
     }
+
+    /**连接到新用户
+     * @param newUsername 待连接新用户名
+     */
     private void newConnect(String newUsername) {
         ChatClient chatClient = new ChatClient() {
             @Override
             protected void whenReceiveMessage(Message message) {
-              Platform.runLater(()->{
-                  whenGetNewMessage(message);
-              });
+              Platform.runLater(()-> whenGetNewMessage(message));
             }
         };
         Login login = allUserInfo.get(newUsername);
@@ -321,30 +184,26 @@ public class MainController {
     /**
      * 文件选择按钮被点击，显示文件选择框
      */
-    private void whenFileSelect() {
+    public void whenFileSelect() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("选择待发送的文件");
         fileChooser.setInitialDirectory(new File("."));
-        File file = fileChooser.showOpenDialog(fdc.stage);
+        File file = fileChooser.showOpenDialog(fdc.getStage());
         selectFile=file;
         filePath = file.getPath();
-        fdc.pathText.setText(filePath);
+        fdc.getPathText().setText(filePath);
+
     }
     /**
      * 文件发送按钮被点击，开始进入发送文件流程
      */
-    private void whenFileWillSend() {
+    public void whenFileWillSend() {
 
         //拼接文件发送请求，等待回应
         File file = new File(filePath);
-        fileLength= (int) file.length();
-
-        Sender sender = allSender.get(curUsername);
         FileSend fileSend = createFileSend(file);
-        sender.sendTo(curUsername, fileSend);
-        readedBytes =0;
-
-        whenWaittingAccept();
+        send(fileSend);
+        whenWaitingAccept();
         //接下来就等待对方发送FileRecv对象回应
     }
     /**当收到FileSend请求，弹出接收文件对话框
@@ -355,86 +214,60 @@ public class MainController {
         rfc=new ReceiveFileController();
         fxmlLoader.setController(rfc);
         Stage stage = ShowDialog(fxmlLoader);
-        rfc.stage=stage;
-        stage.toFront();
+        rfc.setStage(stage);
+        stage.setAlwaysOnTop(true);
+        stage.setAlwaysOnTop(false);
         rfc.setFileSend(message);
+        rfc.setMainController(this);
     }
     /**收到响应
      * @param message
      */
     private void whenGetFileAck(FileAck message) {
         //简单校验
-        if(message.getSeq() == curSeq-1){
-            sendOneBlock();
-
+        if(fileSendService.recvAck(message)){
+            send(fileSendService.sendBlock(selectFile.getName()));
+            updateFileSendBar();
         }else{
             log.error("序列号不对{}",message);
         }
     }
     /**收到文件块*/
     private void whenGetFileBlock(FileBlock message) {
-        if(bos!=null){
-
-            try {
-                //写
-                bos.write(message.getData(),0,message.getBlockLength());
-                writedBytes+=message.getBlockLength();
-                //拼接响应，等待下一个数据块
-                FileAck fileAck = createFileAck(message);
-
-                if(writedBytes<fileLength){
-                    send(fileAck);
-                    updateFileRecvBar();
-                }else{
-                    whenReceiveDone();
-                    bos.flush();
-                    bos.close();
-                    bos=null;
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        send(fileReceiveService.recv(message));
+        updateFileReceiveBar();
     }
     /**收到文件同意的请求*/
     private void whenGetFileRecv(FileRecv message) {
         if(message.isAccept()){
-            try {
-                bis = new BufferedInputStream(new FileInputStream(selectFile));
-                curSeq=0;
-                sendOneBlock();
-
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
+            fileSendService.prepareFile(selectFile);
+            send(fileSendService.sendBlock(selectFile.getName()));
         }else{
             //todo 不接受
         }
     }
     /**拒绝接收文件*/
-    private void whenFileRefuse(FileSend fileSend) {
+    public void whenFileRefuse(FileSend fileSend) {
     }
     /**
      * 同意接受文件，开始文件块传输
      * @param fileSend
      */
-    private void whenFileAccept(FileSend fileSend) {
+    public void whenFileAccept(FileSend fileSend) {
         String filename = fileSend.getFilename();
         //拼接请求
         FileRecv fileRecv = createFileRecv(filename);
 
         //发送同意
-        Sender sender = allSender.get(curUsername);
-        sender.sendTo(curUsername,fileRecv);
-
+        send(fileRecv);
         //准备好接受的上下文环境
         whenStartSend(fileSend, filename);
     }
     /**
      * 文件取消按钮被点击
      */
-    private void whenFileClean() {
-        fdc.stage.close();
+    public void whenFileClean() {
+        fdc.getStage().close();
     }
 
     //UI辅助函数
@@ -447,56 +280,43 @@ public class MainController {
         chatMessageText.appendText(format(message));
     }
     private void whenReceiveDone() {
-        rfc.infoLabel.setText("接收成功");
-        rfc.acceptBtn.setDisable(false);
-        rfc.refuseBtn.setDisable(true);
-        rfc.acceptBtn.setText("完成");
+        rfc.getInfoLabel().setText("接收成功");
+        rfc.getAcceptBtn().setDisable(false);
+        rfc.getRefuseBtn().setDisable(true);
+        rfc.getAcceptBtn().setText("完成");
     }
     private void whenFileSendDone() {
-        fdc.infoLabel.setText("发送成功！");
-        fdc.cleanBtn.setText("完成");
+        fdc.getInfoLabel().setText("发送成功！");
+        fdc.getCleanBtn().setText("完成");
     }
     private void whenStartSend(FileSend fileSend, String filename) {
-        //存放接受的文件数据
-        recvFile = new File(ImConfig.outputDir + filename);
-        try {
-
-            bos = new BufferedOutputStream(new FileOutputStream(recvFile));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        writedBytes=0;
-        fileLength= (int) fileSend.getFileLength();
-
-        rfc.acceptBtn.setDisable(true);
-        rfc.refuseBtn.setText("取消接收");
+        fileReceiveService.prepareRecevie(fileSend,selfUsername);
+        rfc.getAcceptBtn().setDisable(true);
+        rfc.getRefuseBtn().setText("取消接收");
     }
     /**
      * 更新发送框的进度条
      */
     private void updateFileSendBar(){
-        fdc.bar.setSecondaryProgress(1.0* readedBytes /fileLength);
-        fdc.infoLabel.setText(String.format("%.2f%%",100.0* readedBytes /fileLength));
+        fdc.getBar().setSecondaryProgress(fileSendService.getPercent(selectFile.getName()));
+        fdc.getInfoLabel().setText(String.format("%.2f%%",100.0*fileSendService.getPercent(selectFile.getName())));
     }
     /**
      * 更新接受框的进度条
      */
-    private void updateFileRecvBar(){
-        rfc.bar.setSecondaryProgress(1.0*writedBytes/fileLength);
-        rfc.infoLabel.setText(String.format("%.2f%%",100.0*writedBytes/fileLength));
+    private void updateFileReceiveBar(){
+        rfc.getBar().setSecondaryProgress(fileReceiveService.getPercent(""));
+        rfc.getInfoLabel().setText(String.format("%.2f%%",100.0*fileReceiveService.getPercent("")));
     }
-    private void whenWaittingAccept() {
-        fdc.infoLabel.setText("等待对方同意接收...");
-        fdc.okBtn.setDisable(true);
-        fdc.cleanBtn.setText("取消发送");
+    private void whenWaitingAccept() {
+        fdc.getInfoLabel().setText("等待对方同意接收...");
+        fdc.getOkBtn().setDisable(true);
+        fdc.getCleanBtn().setText("取消发送");
     }
     private void ShowAllMessage(String newUsername) {
         List<Message> messages = allMessage.getOrDefault(newUsername, null);
         if(messages!=null){
-            for (Message m:messages
-            ) {
-                showMessageToText(m);
-            }
+            messages.forEach(this::showMessageToText);
         }
     }
 
@@ -520,27 +340,7 @@ public class MainController {
         }
         list.add(message);
     }
-    private void sendOneBlock(){
-        byte[] bytes = new byte[blockSize];
-        try {
-            int read = bis.read(bytes, 0, blockSize);
-            readedBytes +=read;
 
-            FileBlock fileBlock = createFileBlock(bytes, read);
-
-            updateFileSendBar();
-            if(read>0){
-                //文件结束就不发送
-                send(fileBlock);
-                curSeq++;
-            }
-            if(read!=blockSize){
-                whenFileSendDone();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
     private void send(Message message){
         Sender sender = allSender.get(curUsername);
         sender.sendTo(curUsername,message);
@@ -560,15 +360,42 @@ public class MainController {
         return null;
     }
 
+    //域
+    @FXMLViewFlowContext  private ViewFlowContext flowContext;
+    @FXML private JFXButton sendBtn;
+    @FXML private Label otherUserNameLabel;
+    @FXML private JFXTextArea inputText;
+    @FXML private JFXTextArea chatMessageText;
+    @FXML private JFXListView<String> userListView;
+    @FXML private JFXTextField logText;
+
+
+    //数据域
+    private String curUsername;
+    private String serverAddress="";
+    private String serverPort="";
+    private String selfUsername="";
+    private Integer chatServerPort;
+
+    private HashMap<String,Sender> allSender=new HashMap<>();
+    private HashMap<String,Login> allUserInfo=new HashMap<>();
+    private HashMap<String, List<Message>> allMessage=new HashMap<>();
+    private ChatServer chatServer;
+
+    /*ui相关*/
+    private ReceiveFileController rfc;
+    private FileDialogController fdc;
+    private ObservableList<String> allUserList;
+    /*文件相关*/
+    private String filePath="";
+    private File selectFile;
+
+
+    /*service*/
+    private FileSendService fileSendService=FileSendService.getInstance();
+    private FileReceiveService fileReceiveService=FileReceiveService.getInstance();
+
     //DTO
-    private FileAck createFileAck(FileBlock message) {
-        FileAck fileAck = new FileAck();
-        fileAck.setFilename(message.getFilename());
-        fileAck.setSeq(message.getSeq());
-        fileAck.setTime(new Date());
-        fileAck.setUsername(selfUsername);
-        return fileAck;
-    }
     private FileSend createFileSend(File file) {
         FileSend fileSend = new FileSend();
         fileSend.setFilename(file.getName());
@@ -587,15 +414,7 @@ public class MainController {
         fileRecv.setUsername(selfUsername);
         return fileRecv;
     }
-    private FileBlock createFileBlock(byte[] bytes, int read) {
-        FileBlock fileBlock = new FileBlock();
-        fileBlock.setBlockLength(read);
-        fileBlock.setData(bytes);
-        fileBlock.setFilename(selectFile.getName());
-        fileBlock.setSeq(curSeq);
-        fileBlock.setTime(new Date());
-        return fileBlock;
-    }
+
     private TextMessage createTextMessage(String msg) {
         TextMessage textMessage = new TextMessage();
         textMessage.setContent(msg);

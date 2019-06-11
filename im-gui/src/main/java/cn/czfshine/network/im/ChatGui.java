@@ -5,6 +5,7 @@ package cn.czfshine.network.im;
  */
 
 
+import cn.czfshine.network.im.controller.LoginController;
 import com.jfoenix.controls.JFXDecorator;
 import com.jfoenix.svg.SVGGlyph;
 import io.datafx.controller.flow.Flow;
@@ -15,10 +16,7 @@ import io.datafx.controller.flow.context.ViewFlowContext;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
-import javafx.scene.layout.StackPane;
-import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 public class ChatGui extends Application {

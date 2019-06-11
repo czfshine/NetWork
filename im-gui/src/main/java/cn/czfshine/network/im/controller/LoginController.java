@@ -1,13 +1,10 @@
-package cn.czfshine.network.im;
+package cn.czfshine.network.im.controller;
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXTextField;
 import io.datafx.controller.ViewController;
-import io.datafx.controller.flow.action.ActionMethod;
-import io.datafx.controller.flow.action.ActionTrigger;
 import io.datafx.controller.flow.action.LinkAction;
 import io.datafx.controller.flow.context.FXMLViewFlowContext;
 import io.datafx.controller.flow.context.ViewFlowContext;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import lombok.Data;
 
